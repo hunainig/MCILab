@@ -1,0 +1,164 @@
+[
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o CMakeFiles/Lab2_09276.dir/Core/Src/main.c.o -c /home/administrator/my-project/Lab2_09276/Core/Src/main.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Core/Src/main.c",
+  "output": "CMakeFiles/Lab2_09276.dir/Core/Src/main.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o CMakeFiles/Lab2_09276.dir/Core/Src/stm32f3xx_it.c.o -c /home/administrator/my-project/Lab2_09276/Core/Src/stm32f3xx_it.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Core/Src/stm32f3xx_it.c",
+  "output": "CMakeFiles/Lab2_09276.dir/Core/Src/stm32f3xx_it.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o CMakeFiles/Lab2_09276.dir/Core/Src/stm32f3xx_hal_msp.c.o -c /home/administrator/my-project/Lab2_09276/Core/Src/stm32f3xx_hal_msp.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Core/Src/stm32f3xx_hal_msp.c",
+  "output": "CMakeFiles/Lab2_09276.dir/Core/Src/stm32f3xx_hal_msp.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o CMakeFiles/Lab2_09276.dir/Core/Src/sysmem.c.o -c /home/administrator/my-project/Lab2_09276/Core/Src/sysmem.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Core/Src/sysmem.c",
+  "output": "CMakeFiles/Lab2_09276.dir/Core/Src/sysmem.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o CMakeFiles/Lab2_09276.dir/Core/Src/syscalls.c.o -c /home/administrator/my-project/Lab2_09276/Core/Src/syscalls.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Core/Src/syscalls.c",
+  "output": "CMakeFiles/Lab2_09276.dir/Core/Src/syscalls.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -o CMakeFiles/Lab2_09276.dir/startup_stm32f303xc.s.o -c /home/administrator/my-project/Lab2_09276/startup_stm32f303xc.s",
+  "file": "/home/administrator/my-project/Lab2_09276/startup_stm32f303xc.s",
+  "output": "CMakeFiles/Lab2_09276.dir/startup_stm32f303xc.s.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Core/Src/system_stm32f3xx.c.o -c /home/administrator/my-project/Lab2_09276/Core/Src/system_stm32f3xx.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Core/Src/system_stm32f3xx.c",
+  "output": "cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Core/Src/system_stm32f3xx.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_ll_usb.c.o -c /home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_ll_usb.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_ll_usb.c",
+  "output": "cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_ll_usb.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_i2c.c.o -c /home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_i2c.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_i2c.c",
+  "output": "cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_i2c.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_i2c_ex.c.o -c /home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_i2c_ex.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_i2c_ex.c",
+  "output": "cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_i2c_ex.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal.c.o -c /home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal.c",
+  "output": "cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_rcc.c.o -c /home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_rcc.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_rcc.c",
+  "output": "cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_rcc.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_rcc_ex.c.o -c /home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_rcc_ex.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_rcc_ex.c",
+  "output": "cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_rcc_ex.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_gpio.c.o -c /home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_gpio.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_gpio.c",
+  "output": "cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_gpio.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_dma.c.o -c /home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_dma.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_dma.c",
+  "output": "cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_dma.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_cortex.c.o -c /home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_cortex.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_cortex.c",
+  "output": "cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_cortex.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pwr.c.o -c /home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pwr.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pwr.c",
+  "output": "cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pwr.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pwr_ex.c.o -c /home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pwr_ex.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pwr_ex.c",
+  "output": "cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pwr_ex.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_flash.c.o -c /home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_flash.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_flash.c",
+  "output": "cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_flash.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_flash_ex.c.o -c /home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_flash_ex.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_flash_ex.c",
+  "output": "cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_flash_ex.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_exti.c.o -c /home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_exti.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_exti.c",
+  "output": "cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_exti.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_spi.c.o -c /home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_spi.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_spi.c",
+  "output": "cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_spi.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_spi_ex.c.o -c /home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_spi_ex.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_spi_ex.c",
+  "output": "cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_spi_ex.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_uart.c.o -c /home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_uart.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_uart.c",
+  "output": "cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_uart.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_uart_ex.c.o -c /home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_uart_ex.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_uart_ex.c",
+  "output": "cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_uart_ex.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pcd.c.o -c /home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pcd.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pcd.c",
+  "output": "cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pcd.c.o"
+},
+{
+  "directory": "/home/administrator/my-project/Lab2_09276",
+  "command": "/usr/bin/cc -DDEBUG -DSTM32F303xC -DUSE_HAL_DRIVER -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Core/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Device/ST/STM32F3xx/Include -I/home/administrator/my-project/Lab2_09276/cmake/stm32cubemx/../../Drivers/CMSIS/Include -g -std=gnu11 -o cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pcd_ex.c.o -c /home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pcd_ex.c",
+  "file": "/home/administrator/my-project/Lab2_09276/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pcd_ex.c",
+  "output": "cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pcd_ex.c.o"
+}
+]
