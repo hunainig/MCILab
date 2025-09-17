@@ -1,0 +1,6 @@
+/home/administrator/my-project/test_proj/build/Debug/CMakeFiles/test_proj.dir
+/home/administrator/my-project/test_proj/build/Debug/CMakeFiles/edit_cache.dir
+/home/administrator/my-project/test_proj/build/Debug/CMakeFiles/rebuild_cache.dir
+/home/administrator/my-project/test_proj/build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir
+/home/administrator/my-project/test_proj/build/Debug/cmake/stm32cubemx/CMakeFiles/edit_cache.dir
+/home/administrator/my-project/test_proj/build/Debug/cmake/stm32cubemx/CMakeFiles/rebuild_cache.dir
