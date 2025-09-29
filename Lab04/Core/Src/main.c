@@ -283,6 +283,7 @@ static void MX_SPI1_Init(void)
   * @param None
   * @retval None
   */
+
 static void MX_TIM2_Init(void)
 {
 
@@ -297,9 +298,9 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 47999;
+  htim2.Init.Prescaler = 47;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 4294967295;
+  htim2.Init.Period = 999;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -409,11 +410,26 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+volatile uint32_t countA = 0;  // 500 ms -> 1 Hz
+volatile uint32_t countB = 0;  // 200 ms -> 2.5 Hz
+volatile uint32_t countC = 0;  // 100 ms -> 5 Hz
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-  if (htim->Instance == TIM2) {
-      HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);  // pick any CubeMX LED (e.g., LD3)
-  }
+    if (htim->Instance == TIM2) {
+        // Increment every 1 ms
+        if (++countA >= 500) {                 // 500 ms -> ~1 Hz blink
+            HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
+            countA = 0;
+        }
+        if (++countB >= 200) {                 // 200 ms -> ~2.5 Hz
+            HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
+            countB = 0;
+        }
+        if (++countC >= 100) {                 // 100 ms -> ~5 Hz
+            HAL_GPIO_TogglePin(LD5_GPIO_Port, LD5_Pin);
+            countC = 0;
+        }
+    }
 }
 /* USER CODE END 4 */
 
