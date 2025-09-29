@@ -119,10 +119,9 @@ int main(void)
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
   // Start PWM on TIM3 Channel 1 (PC6)
-HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);  // correct spelling!
-Motor_SetDirection(0);
-Motor_SetSpeed(500);
-
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);  // correct spelling!
+  Motor_SetDirection(0);
+  Motor_SetSpeed(500);
 
   // Initial direction = forward
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);   // IN1 = 1
@@ -137,25 +136,40 @@ Motor_SetSpeed(500);
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-{
-    // Clockwise
-    Motor_SetDirection(0);   // IN1=1, IN2=0
-    Motor_SetSpeed(700);     // ~70% duty cycle
-    HAL_Delay(1000);         // run 1 second
+  while (1) {
+  // Task 1
+  // // Fade in
+  // for (uint16_t i = 0; i < 1000; i++)
+  // {
+  //     __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, i);
+  //     HAL_Delay(1); // Adjust speed of fading
+  // }
 
-    // Stop
-    Motor_SetSpeed(0);
-    HAL_Delay(500);
+  // // Fade out
+  // for (uint16_t i = 1000; i > 0; i--)
+  // {
+  //     __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, i);
+  //     HAL_Delay(1);
+  // }
 
-    // Counter-Clockwise
-    Motor_SetDirection(1);   // IN1=0, IN2=1
-    Motor_SetSpeed(700);     // ~70% duty cycle
-    HAL_Delay(1000);         // run 1 second
+  // Task 2
+  // Clockwise
+  Motor_SetDirection(0);   // IN1=1, IN2=0
+  Motor_SetSpeed(700);     // ~70% duty cycle
+  HAL_Delay(1000);         // run 1 second
 
-    // Stop
-    Motor_SetSpeed(0);
-    HAL_Delay(500);
+  // Stop
+  Motor_SetSpeed(0);
+  HAL_Delay(500);
+
+  // Counter-Clockwise
+  Motor_SetDirection(1);   // IN1=0, IN2=1
+  Motor_SetSpeed(700);     // ~70% duty cycle
+  HAL_Delay(1000);         // run 1 second
+
+  // Stop
+  Motor_SetSpeed(0);
+  HAL_Delay(500);
 }
 
   /* USER CODE END 3 */

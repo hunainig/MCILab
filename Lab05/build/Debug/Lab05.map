@@ -4207,7 +4207,7 @@ LOAD linker stubs
  .debug_macro   0x0001d13f      0x200 CMakeFiles/Lab05.dir/Core/Src/stm32f3xx_it.c.obj
  .debug_macro   0x0001d33f      0x1f6 CMakeFiles/Lab05.dir/Core/Src/stm32f3xx_hal_msp.c.obj
 
-.debug_line     0x00000000    0x11de3
+.debug_line     0x00000000    0x11ddd
  .debug_line    0x00000000      0x732 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Core/Src/system_stm32f3xx.c.obj
  .debug_line    0x00000732     0x104f cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_ll_usb.c.obj
  .debug_line    0x00001781     0x36bf cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_i2c.c.obj
@@ -4220,12 +4220,12 @@ LOAD linker stubs
  .debug_line    0x00009895     0x3d53 cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_tim.c.obj
  .debug_line    0x0000d5e8     0x199b cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_tim_ex.c.obj
  .debug_line    0x0000ef83     0x122e cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pcd.c.obj
- .debug_line    0x000101b1      0x9a7 CMakeFiles/Lab05.dir/Core/Src/main.c.obj
- .debug_line    0x00010b58      0x767 CMakeFiles/Lab05.dir/Core/Src/stm32f3xx_it.c.obj
- .debug_line    0x000112bf      0x7bc CMakeFiles/Lab05.dir/Core/Src/stm32f3xx_hal_msp.c.obj
- .debug_line    0x00011a7b       0x7a CMakeFiles/Lab05.dir/startup_stm32f303xc.s.obj
- .debug_line    0x00011af5      0x17e /home/administrator/st/stm32cubeclt_1.19.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg_nano.a(libc_a-memset.o)
- .debug_line    0x00011c73      0x170 /home/administrator/st/stm32cubeclt_1.19.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg_nano.a(libc_a-init.o)
+ .debug_line    0x000101b1      0x9a1 CMakeFiles/Lab05.dir/Core/Src/main.c.obj
+ .debug_line    0x00010b52      0x767 CMakeFiles/Lab05.dir/Core/Src/stm32f3xx_it.c.obj
+ .debug_line    0x000112b9      0x7bc CMakeFiles/Lab05.dir/Core/Src/stm32f3xx_hal_msp.c.obj
+ .debug_line    0x00011a75       0x7a CMakeFiles/Lab05.dir/startup_stm32f303xc.s.obj
+ .debug_line    0x00011aef      0x17e /home/administrator/st/stm32cubeclt_1.19.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg_nano.a(libc_a-memset.o)
+ .debug_line    0x00011c6d      0x170 /home/administrator/st/stm32cubeclt_1.19.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard/libg_nano.a(libc_a-init.o)
 
 .debug_str      0x00000000    0xb339f
  .debug_str     0x00000000    0xb339f cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Core/Src/system_stm32f3xx.c.obj
