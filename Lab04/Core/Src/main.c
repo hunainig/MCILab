@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include <stdio.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -117,7 +118,16 @@ int main(void)
   MX_TIM2_Init();
   MX_USB_PCD_Init();
   /* USER CODE BEGIN 2 */
+  // 48 MHz / (47999+1) = 1 kHz -> 1 tick = 1 ms
+  __HAL_TIM_SET_PRESCALER(&htim2, 47999);   // optional if already set by CubeMX
+  __HAL_TIM_SET_AUTORELOAD(&htim2, 999);    // 1000 ms period
 
+  // NVIC (if CubeMX didn't enable it)
+  HAL_NVIC_SetPriority(TIM2_IRQn, 1, 0);
+  HAL_NVIC_EnableIRQ(TIM2_IRQn);
+
+  // Start TIM2 in interrupt mode
+  HAL_TIM_Base_Start_IT(&htim2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -125,8 +135,8 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-    HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin); // Toggle LED
-    delay_ms(1000); // Delay 1 second
+    HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);  // Toggle LD3
+    HAL_Delay(1000);                        // 1000 ms delay
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -399,7 +409,12 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  if (htim->Instance == TIM2) {
+      HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);  // pick any CubeMX LED (e.g., LD3)
+  }
+}
 /* USER CODE END 4 */
 
 /**
