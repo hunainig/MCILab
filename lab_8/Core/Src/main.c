@@ -22,6 +22,17 @@
 #include <string.h>  // for strlen()
 
 // --- Gyro registers ---
+// --- Axis output registers (little-endian: L then H) ---
+#define I3G4250D_OUT_X_L   0x28
+#define I3G4250D_OUT_X_H   0x29
+#define I3G4250D_OUT_Y_L   0x2A
+#define I3G4250D_OUT_Y_H   0x2B
+#define I3G4250D_OUT_Z_L   0x2C
+#define I3G4250D_OUT_Z_H   0x2D
+
+// Sensitivity for ±245 dps (default FS): 8.75 mdps/LSB = 0.00875 dps/LSB
+#define I3G4250D_SENS_245DPS  0.00875f
+
 #define I3G4250D_WHO_AM_I      0x0F
 #define I3G4250D_CTRL_REG1     0x20
 #define I3G4250D_OUT_TEMP      0x26
@@ -77,9 +88,7 @@ static uint32_t next_due = 0;
 /* USER CODE END Includes */
 
 /* USER CODE BEGIN PV */
-#define GYRO_CS_PORT        GPIOE
-#define GYRO_CS_PIN         CS_I2C_SPI_Pin  // PE3 from your CubeMX
-#define I3G4250D_WHO_AM_I   0x0F
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -94,6 +103,7 @@ static void MX_USART1_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
 static inline void GYRO_CS_L(void){ HAL_GPIO_WritePin(GYRO_CS_PORT, GYRO_CS_PIN, GPIO_PIN_RESET); }
 static inline void GYRO_CS_H(void){ HAL_GPIO_WritePin(GYRO_CS_PORT, GYRO_CS_PIN, GPIO_PIN_SET); }
 
@@ -139,7 +149,55 @@ static uint8_t Gyro_ReadReg(uint8_t reg)
   GYRO_CS_H();
 
   return val;
+
+  
 }
+
+// Read N bytes starting at 'start_addr' using auto-increment
+static void Gyro_ReadMulti(uint8_t start_addr, uint8_t *buf, uint16_t len)
+{
+  uint8_t cmd = 0x80 | 0x40 | (start_addr & 0x3F); // READ + AUTO-INCR + addr
+  GYRO_CS_L();
+  HAL_SPI_Transmit(&hspi1, &cmd, 1, HAL_MAX_DELAY);
+  HAL_SPI_Receive (&hspi1, buf, len, HAL_MAX_DELAY);
+  GYRO_CS_H();
+}
+
+// Do one sample: temp + XYZ (raw→dps) and print: "<temp>, <x>, <y>, <z>\n"
+static void SampleAndPrint_IntCSV(void)
+{
+  // --- temperature (1 byte, signed) ---
+  uint8_t t_u8 = 0;
+  uint8_t t_cmd = 0x80 | (I3G4250D_OUT_TEMP & 0x3F);
+  GYRO_CS_L();
+  HAL_SPI_Transmit(&hspi1, &t_cmd, 1, HAL_MAX_DELAY);
+  HAL_SPI_Receive (&hspi1, &t_u8, 1, HAL_MAX_DELAY);
+  GYRO_CS_H();
+  int8_t temp = (int8_t)t_u8;   // signed integer (OK for the script)
+
+  // --- axes: read 6 bytes starting at OUT_X_L (auto-increment read) ---
+  uint8_t raw[6];
+  Gyro_ReadMulti(I3G4250D_OUT_X_L, raw, 6);
+
+  int16_t x_raw = (int16_t)((((int16_t)raw[1]) << 8) | raw[0]);
+  int16_t y_raw = (int16_t)((((int16_t)raw[3]) << 8) | raw[2]);
+  int16_t z_raw = (int16_t)((((int16_t)raw[5]) << 8) | raw[4]);
+
+  // ---- convert to mdps (integers) : mdps = round(raw * 8.75) ----
+  // Use integer math with rounding: (val*875 + 50)/100  (mdps)
+  int32_t x_mdps = ((int32_t)x_raw * 875 + (x_raw >= 0 ? 50 : -50)) / 100;
+  int32_t y_mdps = ((int32_t)y_raw * 875 + (y_raw >= 0 ? 50 : -50)) / 100;
+  int32_t z_mdps = ((int32_t)z_raw * 875 + (z_raw >= 0 ? 50 : -50)) / 100;
+
+  // ---- CSV with NO spaces, integers only, newline at end ----
+  char line[64];
+  //           temp,   x_mdps, y_mdps, z_mdps
+  // Example:   25,1234,-87,314\n
+  int n = snprintf(line, sizeof(line), "%d,%ld,%ld,%ld\n",
+                   (int)temp, (long)x_mdps, (long)y_mdps, (long)z_mdps);
+  if (n > 0) uart_print(line);
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -176,23 +234,20 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-/* USER CODE BEGIN 2 */
 HAL_Delay(10); // power-up
 HAL_GPIO_WritePin(GYRO_CS_PORT, GYRO_CS_PIN, GPIO_PIN_SET);
 
 // optional: verify device (you already have this)
-uint8_t who = 0;
 {
   uint8_t cmd = 0x80 | (I3G4250D_WHO_AM_I & 0x3F);
+  uint8_t who = 0;
   GYRO_CS_L();
   HAL_SPI_Transmit(&hspi1, &cmd, 1, HAL_MAX_DELAY);
   HAL_SPI_Receive (&hspi1, &who, 1, HAL_MAX_DELAY);
   GYRO_CS_H();
-  char msg[16];
-  int8_t t = (int8_t)temp_raw;
-  snprintf(msg, sizeof(msg), "%d\n", (int)t);  // just the number
-  uart_print(msg);
+  // do not print here (Python expects strict CSV)
 }
+
 
 Gyro_Init();              // power on, enable axes
 next_due = HAL_GetTick(); // start immediately
@@ -206,14 +261,23 @@ next_due = HAL_GetTick(); // start immediately
 /* USER CODE BEGIN WHILE */
 while (1)
 {
-  uint32_t now = HAL_GetTick();
-  if (!spi_busy && (int32_t)(now - next_due) >= 0)
-  {
-    Start_Temp_Read_IT();  // begins TX_IT -> RX_IT chain
-  }
+  // --- read OUT_TEMP (blocking, 1 byte) ---
+  uint8_t t_u8 = 0;
+  uint8_t t_cmd = 0x80 | (I3G4250D_OUT_TEMP & 0x3F); // READ + addr
+  GYRO_CS_L();
+  HAL_SPI_Transmit(&hspi1, &t_cmd, 1, HAL_MAX_DELAY);
+  HAL_SPI_Receive (&hspi1, &t_u8, 1, HAL_MAX_DELAY);
+  GYRO_CS_H();
 
-  // you can do other work here; no blocking needed
+  // print ONE signed integer + newline
+  int8_t t = (int8_t)t_u8;
+  char line[16];
+  int n = snprintf(line, sizeof(line), "%d\n", (int)t);
+  if (n > 0) uart_print(line);
+
+  HAL_Delay(150);  // 100–200 ms window
 }
+
 /* USER CODE END WHILE */
 
     /* USER CODE END WHILE */
@@ -454,7 +518,6 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 {
   if (hspi == &hspi1)
   {
-    // 2) after command sent, receive 1 byte
     if (HAL_SPI_Receive_IT(&hspi1, &temp_raw, 1) != HAL_OK) {
       GYRO_CS_H(); spi_busy = 0;
     }
@@ -467,13 +530,6 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
   {
     GYRO_CS_H();
     spi_busy = 0;
-
-    char msg[16];
-    int8_t t = (int8_t)temp_raw;
-    snprintf(msg, sizeof(msg), "%d\n", (int)t);  // just the number
-    uart_print(msg);
-
-    // schedule next read
     next_due = HAL_GetTick() + TEMP_PERIOD_MS;
   }
 }
