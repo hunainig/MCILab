@@ -19,7 +19,23 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usb_device.h"
-#include <stdio.h>
+#include <string.h>  // for strlen()
+
+// --- Gyro registers ---
+#define I3G4250D_WHO_AM_I      0x0F
+#define I3G4250D_CTRL_REG1     0x20
+#define I3G4250D_OUT_TEMP      0x26
+
+// CTRL_REG1 value: PD=1, Xen=Yen=Zen=1; DR/BW left at default
+#define I3G4250D_CTRL_REG1_VAL 0x0F
+
+// --- CS pin (as you already use) ---
+#define GYRO_CS_PORT GPIOE
+#define GYRO_CS_PIN  CS_I2C_SPI_Pin
+
+// pacing period (ms) for temperature reads
+#define TEMP_PERIOD_MS 150
+
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -48,6 +64,13 @@ SPI_HandleTypeDef hspi1;
 
 UART_HandleTypeDef huart1;
 
+// SPI interrupt state
+static volatile uint8_t spi_busy = 0;
+static uint8_t spi_cmd = 0;
+static uint8_t temp_raw = 0;
+static uint32_t next_due = 0;
+
+
 /* USER CODE BEGIN PV */
 /* USER CODE BEGIN Includes */
 
@@ -57,9 +80,6 @@ UART_HandleTypeDef huart1;
 #define GYRO_CS_PORT        GPIOE
 #define GYRO_CS_PIN         CS_I2C_SPI_Pin  // PE3 from your CubeMX
 #define I3G4250D_WHO_AM_I   0x0F
-/* USER CODE END PV */
-
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -74,13 +94,39 @@ static void MX_USART1_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-/* USER CODE BEGIN 0 */
 static inline void GYRO_CS_L(void){ HAL_GPIO_WritePin(GYRO_CS_PORT, GYRO_CS_PIN, GPIO_PIN_RESET); }
 static inline void GYRO_CS_H(void){ HAL_GPIO_WritePin(GYRO_CS_PORT, GYRO_CS_PIN, GPIO_PIN_SET); }
 
 static void uart_print(const char* s) {
   HAL_UART_Transmit(&huart1, (uint8_t*)s, (uint16_t)strlen(s), 100);
 }
+static void Gyro_Init(void)
+{
+  uint8_t tx[2];
+  tx[0] = (I3G4250D_CTRL_REG1 & 0x3F);     // write: bit7=0, bits[5:0]=addr
+  tx[1] = I3G4250D_CTRL_REG1_VAL;
+
+  GYRO_CS_L();
+  HAL_SPI_Transmit(&hspi1, tx, 2, HAL_MAX_DELAY); // blocking ok for init
+  GYRO_CS_H();
+
+  HAL_Delay(5); // small settle time
+}
+static void Start_Temp_Read_IT(void)
+{
+  if (spi_busy) return;
+  spi_busy = 1;
+
+  // build read command: bit7=1 (read) | addr
+  spi_cmd = 0x80 | (I3G4250D_OUT_TEMP & 0x3F);
+
+  GYRO_CS_L();
+  // 1) send command byte via interrupt
+  if (HAL_SPI_Transmit_IT(&hspi1, &spi_cmd, 1) != HAL_OK) {
+    GYRO_CS_H(); spi_busy = 0;
+  }
+}
+
 
 static uint8_t Gyro_ReadReg(uint8_t reg)
 {
@@ -94,9 +140,6 @@ static uint8_t Gyro_ReadReg(uint8_t reg)
 
   return val;
 }
-/* USER CODE END 0 */
-
-
 /* USER CODE END 0 */
 
 /**
@@ -133,38 +176,51 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-HAL_Delay(10); // let gyro power up
-
-// Make sure CS idles high
+/* USER CODE BEGIN 2 */
+HAL_Delay(10); // power-up
 HAL_GPIO_WritePin(GYRO_CS_PORT, GYRO_CS_PIN, GPIO_PIN_SET);
 
-// Read WHO_AM_I
-uint8_t who = Gyro_ReadReg(I3G4250D_WHO_AM_I);
+// optional: verify device (you already have this)
+uint8_t who = 0;
+{
+  uint8_t cmd = 0x80 | (I3G4250D_WHO_AM_I & 0x3F);
+  GYRO_CS_L();
+  HAL_SPI_Transmit(&hspi1, &cmd, 1, HAL_MAX_DELAY);
+  HAL_SPI_Receive (&hspi1, &who, 1, HAL_MAX_DELAY);
+  GYRO_CS_H();
+  char msg[16];
+  int8_t t = (int8_t)temp_raw;
+  snprintf(msg, sizeof(msg), "%d\n", (int)t);  // just the number
+  uart_print(msg);
+}
 
-// Print via UART
-char msg[64];
-snprintf(msg, sizeof(msg), "I3G4250D WHO_AM_I = 0x%02X\r\n", who);
-uart_print(msg);
+Gyro_Init();              // power on, enable axes
+next_due = HAL_GetTick(); // start immediately
 /* USER CODE END 2 */
-
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   /* USER CODE BEGIN WHILE */
+/* USER CODE BEGIN WHILE */
 while (1)
 {
-  uint8_t who = Gyro_ReadReg(I3G4250D_WHO_AM_I);
-  char msg[48];
-  snprintf(msg, sizeof(msg), "WHO_AM_I: 0x%02X\r\n", who);
-  uart_print(msg);
-  HAL_Delay(500);
+  uint32_t now = HAL_GetTick();
+  if (!spi_busy && (int32_t)(now - next_due) >= 0)
+  {
+    Start_Temp_Read_IT();  // begins TX_IT -> RX_IT chain
+  }
+
+  // you can do other work here; no blocking needed
 }
 /* USER CODE END WHILE */
 
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
+  }
   /* USER CODE END 3 */
-}
 
 /**
   * @brief System Clock Configuration
@@ -394,6 +450,33 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+  if (hspi == &hspi1)
+  {
+    // 2) after command sent, receive 1 byte
+    if (HAL_SPI_Receive_IT(&hspi1, &temp_raw, 1) != HAL_OK) {
+      GYRO_CS_H(); spi_busy = 0;
+    }
+  }
+}
+
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+  if (hspi == &hspi1)
+  {
+    GYRO_CS_H();
+    spi_busy = 0;
+
+    char msg[16];
+    int8_t t = (int8_t)temp_raw;
+    snprintf(msg, sizeof(msg), "%d\n", (int)t);  // just the number
+    uart_print(msg);
+
+    // schedule next read
+    next_due = HAL_GetTick() + TEMP_PERIOD_MS;
+  }
+}
 
 /* USER CODE END 4 */
 
