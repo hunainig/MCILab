@@ -62,21 +62,21 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "Lab07::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-Lab07-Debug-9771cb9cff7009b96b36.json",
+					"jsonFile" : "target-Lab07-Debug-b8d37931a4b1bcd23334.json",
 					"name" : "Lab07",
 					"projectIndex" : 0
 				},
 				{
 					"directoryIndex" : 1,
 					"id" : "STM32_Drivers::@768a070a0fe75716b479",
-					"jsonFile" : "target-STM32_Drivers-Debug-2d8b09eb6c3b5d23b1a3.json",
+					"jsonFile" : "target-STM32_Drivers-Debug-5052ed1111904c72d5b5.json",
 					"name" : "STM32_Drivers",
 					"projectIndex" : 0
 				},
 				{
 					"directoryIndex" : 1,
 					"id" : "USB_Device_Library::@768a070a0fe75716b479",
-					"jsonFile" : "target-USB_Device_Library-Debug-d2114b536765c4225314.json",
+					"jsonFile" : "target-USB_Device_Library-Debug-7b7f38a37a4d75b796d5.json",
 					"name" : "USB_Device_Library",
 					"projectIndex" : 0
 				}

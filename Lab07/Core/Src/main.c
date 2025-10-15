@@ -22,9 +22,17 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-uint32_t adc_value = 0;
-char msg[50];
+#include <stdio.h>
+#include <string.h>
 
+uint32_t adc_value = 0;
+float adc_voltage = 0.0f;
+
+#define FILTER_SIZE 10
+static float filt_buf[FILTER_SIZE] = {0.0f};
+static uint8_t filt_idx = 0;
+static float filt_sum = 0.0f;
+static float filt_out = 0.0f;
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -113,19 +121,31 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
-    // Wait until conversion is complete
-  HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+    // Wait for ADC conversion to complete
+    if (HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY) == HAL_OK)
+    {
+      // 1️⃣ Read raw ADC value (0–4095)
+      adc_value = HAL_ADC_GetValue(&hadc1);
 
-  // Read ADC value (0–4095 for 12-bit)
-  adc_value = HAL_ADC_GetValue(&hadc1);
+      // 2️⃣ Convert to voltage (3.3 V reference)
+      adc_voltage = (float)adc_value * 3.3f / 4095.0f;
 
-  // Transmit over UART
-  sprintf(msg, "ADC Value: %lu\r\n", adc_value);
-  HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+      // 3️⃣ 10-point moving average
+      filt_sum -= filt_buf[filt_idx];        // remove oldest sample
+      filt_buf[filt_idx] = adc_voltage;      // add new sample
+      filt_sum += adc_voltage;               // update sum
+      filt_idx = (filt_idx + 1) % FILTER_SIZE;
+      filt_out = filt_sum / FILTER_SIZE;
 
-  HAL_Delay(500); // small delay for readable output
-    /* USER CODE BEGIN 3 */
+      // 4) Convert to millivolts (integers)
+      uint32_t raw_mv  = (uint32_t)(adc_voltage * 1000.0f + 0.5f);
+      uint32_t filt_mv = (uint32_t)(filt_out    * 1000.0f + 0.5f);
+
+      // 5) Transmit as "raw,filt\r\n" (no text, no %f needed)
+      char msg[32];
+      int n = snprintf(msg, sizeof(msg), "%lu,%lu\r\n", raw_mv, filt_mv);
+      HAL_UART_Transmit(&huart1, (uint8_t*)msg, (uint16_t)n, HAL_MAX_DELAY);
+    }
   }
   /* USER CODE END 3 */
 }
