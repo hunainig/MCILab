@@ -24,16 +24,15 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include <string.h>
-
-uint32_t adc_value = 0;
-float adc_voltage = 0.0f;
-
-#define FILTER_SIZE 10
-static float filt_buf[FILTER_SIZE] = {0.0f};
-static uint8_t filt_idx = 0;
-static float filt_sum = 0.0f;
-static float filt_out = 0.0f;
 /* USER CODE END Includes */
+
+/* USER CODE BEGIN PV */
+volatile uint32_t adc_value = 0;
+volatile uint32_t filtered_value = 0;
+
+static uint32_t filter_buffer[10] = {0};  // 10-point moving avg buffer
+static uint8_t  filter_index = 0;
+/* USER CODE END PV */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
@@ -114,38 +113,14 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-  HAL_ADC_Start(&hadc1);
+  HAL_ADC_Start_IT(&hadc1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    // Wait for ADC conversion to complete
-    if (HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY) == HAL_OK)
-    {
-      // 1️⃣ Read raw ADC value (0–4095)
-      adc_value = HAL_ADC_GetValue(&hadc1);
-
-      // 2️⃣ Convert to voltage (3.3 V reference)
-      adc_voltage = (float)adc_value * 3.3f / 4095.0f;
-
-      // 3️⃣ 10-point moving average
-      filt_sum -= filt_buf[filt_idx];        // remove oldest sample
-      filt_buf[filt_idx] = adc_voltage;      // add new sample
-      filt_sum += adc_voltage;               // update sum
-      filt_idx = (filt_idx + 1) % FILTER_SIZE;
-      filt_out = filt_sum / FILTER_SIZE;
-
-      // 4) Convert to millivolts (integers)
-      uint32_t raw_mv  = (uint32_t)(adc_voltage * 1000.0f + 0.5f);
-      uint32_t filt_mv = (uint32_t)(filt_out    * 1000.0f + 0.5f);
-
-      // 5) Transmit as "raw,filt\r\n" (no text, no %f needed)
-      char msg[32];
-      int n = snprintf(msg, sizeof(msg), "%lu,%lu\r\n", raw_mv, filt_mv);
-      HAL_UART_Transmit(&huart1, (uint8_t*)msg, (uint16_t)n, HAL_MAX_DELAY);
-    }
+    
   }
   /* USER CODE END 3 */
 }
@@ -439,7 +414,29 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+{
+    if (hadc->Instance == ADC1)
+    {
+        // Read ADC value (12-bit)
+        adc_value = HAL_ADC_GetValue(hadc);
 
+        // Update circular buffer
+        filter_buffer[filter_index] = adc_value;
+        filter_index = (filter_index + 1) % 10;
+
+        // Compute 10-point moving average
+        uint32_t sum = 0;
+        for (int i = 0; i < 10; i++)
+            sum += filter_buffer[i];
+        filtered_value = sum / 10;
+
+        // Transmit both values via UART as: "raw,filtered\r\n"
+        char msg[30];
+        sprintf(msg, "%lu,%lu\r\n", adc_value, filtered_value);
+        HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+    }
+}
 /* USER CODE END 4 */
 
 /**
