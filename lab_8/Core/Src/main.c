@@ -19,34 +19,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usb_device.h"
-#include <string.h>  // for strlen()
-
-// --- Gyro registers ---
-// --- Axis output registers (little-endian: L then H) ---
-#define I3G4250D_OUT_X_L   0x28
-#define I3G4250D_OUT_X_H   0x29
-#define I3G4250D_OUT_Y_L   0x2A
-#define I3G4250D_OUT_Y_H   0x2B
-#define I3G4250D_OUT_Z_L   0x2C
-#define I3G4250D_OUT_Z_H   0x2D
-
-// Sensitivity for ±245 dps (default FS): 8.75 mdps/LSB = 0.00875 dps/LSB
-#define I3G4250D_SENS_245DPS  0.00875f
-
-#define I3G4250D_WHO_AM_I      0x0F
-#define I3G4250D_CTRL_REG1     0x20
-#define I3G4250D_OUT_TEMP      0x26
-
-// CTRL_REG1 value: PD=1, Xen=Yen=Zen=1; DR/BW left at default
-#define I3G4250D_CTRL_REG1_VAL 0x0F
-
-// --- CS pin (as you already use) ---
-#define GYRO_CS_PORT GPIOE
-#define GYRO_CS_PIN  CS_I2C_SPI_Pin
-
-// pacing period (ms) for temperature reads
-#define TEMP_PERIOD_MS 150
-
+#include <stdio.h>
+#include <string.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -75,19 +49,28 @@ SPI_HandleTypeDef hspi1;
 
 UART_HandleTypeDef huart1;
 
-// SPI interrupt state
-static volatile uint8_t spi_busy = 0;
-static uint8_t spi_cmd = 0;
-static uint8_t temp_raw = 0;
-static uint32_t next_due = 0;
-
-
 /* USER CODE BEGIN PV */
-/* USER CODE BEGIN Includes */
+#define GYRO_CS_PORT GPIOE
+#define GYRO_CS_PIN  CS_I2C_SPI_Pin
+#define GYRO_CTRL_REG1     0x20U
+#define GYRO_CTRL_REG4     0x23U
+#define GYRO_OUT_TEMP      0x26U
+#define GYRO_OUT_X_L       0x28U
+#define GYRO_OUT_X_H       0x29U
+#define GYRO_OUT_Y_L       0x2AU
+#define GYRO_OUT_Y_H       0x2BU
+#define GYRO_OUT_Z_L       0x2CU
+#define GYRO_OUT_Z_H       0x2DU
+#define GYRO_SPI_READ      0x80
+#define GYRO_SPI_AUTOINC   0x40
+#define GYRO_SENS_245DPS   0.00875f
 
-/* USER CODE END Includes */
+// ---- Temperature calibration ----
+#define CAL_ROOM_C 25   // <-- set this to your actual room temp (°C)
 
-/* USER CODE BEGIN PV */
+static int8_t  g_t0 = 0;      // baseline raw temp at startup
+static int     g_temp_slope = -1; // default, will be set by WHO (LSB/°C)
+
 
 /* USER CODE END PV */
 
@@ -97,194 +80,152 @@ static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_USART1_UART_Init(void);
-/* USER CODE BEGIN PFP */
 
+
+static uint8_t  txb[8], rxb[8];
+/* USER CODE BEGIN PFP */
+static void gyro_write_reg(uint8_t reg, uint8_t val);
+static void gyro_read_regs(uint8_t start_reg, uint8_t *dst, uint16_t len);
+static void gyro_init(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+// Calibrate temp at startup: pick slope from WHO and average raw baseline
 
-static inline void GYRO_CS_L(void){ HAL_GPIO_WritePin(GYRO_CS_PORT, GYRO_CS_PIN, GPIO_PIN_RESET); }
-static inline void GYRO_CS_H(void){ HAL_GPIO_WritePin(GYRO_CS_PORT, GYRO_CS_PIN, GPIO_PIN_SET); }
-
-static void uart_print(const char* s) {
-  HAL_UART_Transmit(&huart1, (uint8_t*)s, (uint16_t)strlen(s), 100);
-}
-static void Gyro_Init(void)
+static uint8_t gyro_read_u8(uint8_t reg)
 {
-  uint8_t tx[2];
-  tx[0] = (I3G4250D_CTRL_REG1 & 0x3F);     // write: bit7=0, bits[5:0]=addr
-  tx[1] = I3G4250D_CTRL_REG1_VAL;
-
-  GYRO_CS_L();
-  HAL_SPI_Transmit(&hspi1, tx, 2, HAL_MAX_DELAY); // blocking ok for init
-  GYRO_CS_H();
-
-  HAL_Delay(5); // small settle time
-}
-static void Start_Temp_Read_IT(void)
-{
-  if (spi_busy) return;
-  spi_busy = 1;
-
-  // build read command: bit7=1 (read) | addr
-  spi_cmd = 0x80 | (I3G4250D_OUT_TEMP & 0x3F);
-
-  GYRO_CS_L();
-  // 1) send command byte via interrupt
-  if (HAL_SPI_Transmit_IT(&hspi1, &spi_cmd, 1) != HAL_OK) {
-    GYRO_CS_H(); spi_busy = 0;
-  }
-}
-
-
-static uint8_t Gyro_ReadReg(uint8_t reg)
-{
-  uint8_t cmd = 0x80 | (reg & 0x3F); // bit7=1 read, no auto-inc
+  uint8_t cmd = reg | 0x80; // read
   uint8_t val = 0;
-
-  GYRO_CS_L();
-  if (HAL_SPI_Transmit(&hspi1, &cmd, 1, HAL_MAX_DELAY) != HAL_OK) { GYRO_CS_H(); Error_Handler(); }
-  if (HAL_SPI_Receive (&hspi1, &val, 1, HAL_MAX_DELAY) != HAL_OK) { GYRO_CS_H(); Error_Handler(); }
-  GYRO_CS_H();
-
-  return val;
-
-  
-}
-
-// Read N bytes starting at 'start_addr' using auto-increment
-static void Gyro_ReadMulti(uint8_t start_addr, uint8_t *buf, uint16_t len)
-{
-  uint8_t cmd = 0x80 | 0x40 | (start_addr & 0x3F); // READ + AUTO-INCR + addr
-  GYRO_CS_L();
+  HAL_GPIO_WritePin(GYRO_CS_PORT, GYRO_CS_PIN, GPIO_PIN_RESET);
   HAL_SPI_Transmit(&hspi1, &cmd, 1, HAL_MAX_DELAY);
-  HAL_SPI_Receive (&hspi1, buf, len, HAL_MAX_DELAY);
-  GYRO_CS_H();
+  HAL_SPI_Receive(&hspi1, &val, 1, HAL_MAX_DELAY);
+  HAL_GPIO_WritePin(GYRO_CS_PORT, GYRO_CS_PIN, GPIO_PIN_SET);
+  return val;
 }
 
-// Do one sample: temp + XYZ (raw→dps) and print: "<temp>, <x>, <y>, <z>\n"
-static void SampleAndPrint_IntCSV(void)
+static void gyro_temp_calibrate(void)
 {
-  // --- temperature (1 byte, signed) ---
-  uint8_t t_u8 = 0;
-  uint8_t t_cmd = 0x80 | (I3G4250D_OUT_TEMP & 0x3F);
-  GYRO_CS_L();
-  HAL_SPI_Transmit(&hspi1, &t_cmd, 1, HAL_MAX_DELAY);
-  HAL_SPI_Receive (&hspi1, &t_u8, 1, HAL_MAX_DELAY);
-  GYRO_CS_H();
-  int8_t temp = (int8_t)t_u8;   // signed integer (OK for the script)
+  uint8_t who = gyro_read_u8(0x0F); // WHO_AM_I
 
-  // --- axes: read 6 bytes starting at OUT_X_L (auto-increment read) ---
-  uint8_t raw[6];
-  Gyro_ReadMulti(I3G4250D_OUT_X_L, raw, 6);
+  // L3GD20 / L3GD20H -> 0xD4 or 0xD7  => +1 LSB/°C
+  // I3G4250D         -> 0xD3          => -1 LSB/°C
+  if (who == 0xD4 || who == 0xD7) g_temp_slope = +1;
+  else                            g_temp_slope = -1;
 
-  int16_t x_raw = (int16_t)((((int16_t)raw[1]) << 8) | raw[0]);
-  int16_t y_raw = (int16_t)((((int16_t)raw[3]) << 8) | raw[2]);
-  int16_t z_raw = (int16_t)((((int16_t)raw[5]) << 8) | raw[4]);
+  int32_t acc = 0;
+  for (int i = 0; i < 32; i++) {
+    acc += (int8_t)gyro_read_u8(GYRO_OUT_TEMP);
+    HAL_Delay(5);
+  }
+  g_t0 = (int8_t)(acc / 32);
 
-  // ---- convert to mdps (integers) : mdps = round(raw * 8.75) ----
-  // Use integer math with rounding: (val*875 + 50)/100  (mdps)
-  int32_t x_mdps = ((int32_t)x_raw * 875 + (x_raw >= 0 ? 50 : -50)) / 100;
-  int32_t y_mdps = ((int32_t)y_raw * 875 + (y_raw >= 0 ? 50 : -50)) / 100;
-  int32_t z_mdps = ((int32_t)z_raw * 875 + (z_raw >= 0 ? 50 : -50)) / 100;
-
-  // ---- CSV with NO spaces, integers only, newline at end ----
-  char line[64];
-  //           temp,   x_mdps, y_mdps, z_mdps
-  // Example:   25,1234,-87,314\n
-  int n = snprintf(line, sizeof(line), "%d,%ld,%ld,%ld\n",
-                   (int)temp, (long)x_mdps, (long)y_mdps, (long)z_mdps);
-  if (n > 0) uart_print(line);
+  // Optional banner (comment out if you don’t want prints here)
+  char msg[80];
+  int n = snprintf(msg, sizeof(msg), "WHO=0x%02X, t0=%d, slope=%d\r\n",
+                   who, (int)g_t0, g_temp_slope);
+  HAL_UART_Transmit(&huart1, (uint8_t*)msg, (uint16_t)n, HAL_MAX_DELAY);
 }
 
-/* USER CODE END 0 */
+static void gyro_write_reg(uint8_t reg, uint8_t val)
+{
+  HAL_GPIO_WritePin(GYRO_CS_PORT, GYRO_CS_PIN, GPIO_PIN_RESET); // CS LOW
+  txb[0] = reg & 0x7FU;  // write, no auto-inc
+  txb[1] = val;
+  HAL_SPI_Transmit(&hspi1, txb, 2, HAL_MAX_DELAY);
+  HAL_GPIO_WritePin(GYRO_CS_PORT, GYRO_CS_PIN, GPIO_PIN_SET);   // CS HIGH
+  HAL_Delay(1);
+}
 
+static void gyro_read_regs(uint8_t start_reg, uint8_t *dst, uint16_t len)
+{
+  uint8_t cmd = start_reg | GYRO_SPI_READ | (len > 1 ? GYRO_SPI_AUTOINC : 0);
+  HAL_GPIO_WritePin(GYRO_CS_PORT, GYRO_CS_PIN, GPIO_PIN_RESET); // CS LOW
+  HAL_SPI_Transmit(&hspi1, &cmd, 1, HAL_MAX_DELAY);
+  HAL_SPI_Receive(&hspi1, dst, len, HAL_MAX_DELAY);
+  HAL_GPIO_WritePin(GYRO_CS_PORT, GYRO_CS_PIN, GPIO_PIN_SET);   // CS HIGH
+}
+
+static void gyro_init(void)
+{
+  // CTRL_REG1: PD=1 (power on), XYZ enable, ODR default
+  // 0b0000 1111 = 0x0F
+  gyro_write_reg(GYRO_CTRL_REG1, 0x0F);
+
+  // Optional: CTRL_REG4 for full-scale. Leave default (±245 dps) per lab.
+  // Example if you want to set FS=±245 dps explicitly: 0x00
+  // gyro_write_reg(GYRO_CTRL_REG4, 0x00);
+
+  HAL_Delay(10);
+}
+/* USER CODE END 0 */
+#define GYRO_CS_PORT GPIOE
+#define GYRO_CS_PIN  CS_I2C_SPI_Pin
 /**
   * @brief  The application entry point.
   * @retval int
   */
 int main(void)
 {
-
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
   SystemClock_Config();
 
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  HAL_GPIO_WritePin(GYRO_CS_PORT, GYRO_CS_PIN, GPIO_PIN_SET); // idle HIGH
+
   MX_I2C1_Init();
   MX_SPI1_Init();
   MX_USART1_UART_Init();
   MX_USB_DEVICE_Init();
-  /* USER CODE BEGIN 2 */
-HAL_Delay(10); // power-up
-HAL_GPIO_WritePin(GYRO_CS_PORT, GYRO_CS_PIN, GPIO_PIN_SET);
 
-// optional: verify device (you already have this)
-{
-  uint8_t cmd = 0x80 | (I3G4250D_WHO_AM_I & 0x3F);
-  uint8_t who = 0;
-  GYRO_CS_L();
-  HAL_SPI_Transmit(&hspi1, &cmd, 1, HAL_MAX_DELAY);
-  HAL_SPI_Receive (&hspi1, &who, 1, HAL_MAX_DELAY);
-  GYRO_CS_H();
-  // do not print here (Python expects strict CSV)
-}
+  // Now safe to talk to gyro
+  gyro_init();
+  // After: MX_GPIO_Init(); MX_SPI1_Init(); MX_USART1_UART_Init(); gyro_init();
+gyro_temp_calibrate();
 
 
-Gyro_Init();              // power on, enable axes
-next_due = HAL_GetTick(); // start immediately
-/* USER CODE END 2 */
+  uint8_t who = gyro_read_u8(0x0F);
+  uint8_t c1  = gyro_read_u8(0x20);
+  char b[64];
+  int m = snprintf(b, sizeof(b), "WHO=0x%02X, CTRL1=0x%02X\r\n", who, c1);
+  HAL_UART_Transmit(&huart1, (uint8_t*)b, (uint16_t)m, HAL_MAX_DELAY);
 
-  /* USER CODE END 2 */
+  // ---- main loop ----
+  while (1)
+  {
+    // --- Temperature (calibrated to real °C) ---
+int8_t t_raw = 0;
+gyro_read_regs(GYRO_OUT_TEMP, (uint8_t*)&t_raw, 1);
+int temp_c = CAL_ROOM_C + g_temp_slope * ((int)t_raw - (int)g_t0);
+    // alt for L3GD20/H: int temp_c = (int)t_raw;
 
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  /* USER CODE BEGIN WHILE */
-/* USER CODE BEGIN WHILE */
-while (1)
-{
-  // --- read OUT_TEMP (blocking, 1 byte) ---
-  uint8_t t_u8 = 0;
-  uint8_t t_cmd = 0x80 | (I3G4250D_OUT_TEMP & 0x3F); // READ + addr
-  GYRO_CS_L();
-  HAL_SPI_Transmit(&hspi1, &t_cmd, 1, HAL_MAX_DELAY);
-  HAL_SPI_Receive (&hspi1, &t_u8, 1, HAL_MAX_DELAY);
-  GYRO_CS_H();
+    // XYZ
+    uint8_t raw[6];
+    gyro_read_regs(GYRO_OUT_X_L, raw, 6);
+    int16_t x_raw = (int16_t)((((uint16_t)raw[1]) << 8) | raw[0]);
+    int16_t y_raw = (int16_t)((((uint16_t)raw[3]) << 8) | raw[2]);
+    int16_t z_raw = (int16_t)((((uint16_t)raw[5]) << 8) | raw[4]);
 
-  // print ONE signed integer + newline
-  int8_t t = (int8_t)t_u8;
-  char line[16];
-  int n = snprintf(line, sizeof(line), "%d\n", (int)t);
-  if (n > 0) uart_print(line);
+    // dps -> fixed-point ×100 for UART
+    float x_dps = x_raw * GYRO_SENS_245DPS;
+    float y_dps = y_raw * GYRO_SENS_245DPS;
+    float z_dps = z_raw * GYRO_SENS_245DPS;
 
-  HAL_Delay(150);  // 100–200 ms window
-}
+    int xi = (int)(x_dps * 100.0f);
+    int yi = (int)(y_dps * 100.0f);
+    int zi = (int)(z_dps * 100.0f);
 
-/* USER CODE END WHILE */
+    char line[96];
+    int n = snprintf(line, sizeof(line), "%d, %d, %d, %d\r\n",
+                 temp_c, xi, yi, zi);
+    if (n > 0) {
+      HAL_UART_Transmit(&huart1, (uint8_t*)line, (uint16_t)n, HAL_MAX_DELAY);
+    }
 
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
+    HAL_Delay(100);
   }
-  /* USER CODE END 3 */
+}
+
 
 /**
   * @brief System Clock Configuration
@@ -514,25 +455,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
-{
-  if (hspi == &hspi1)
-  {
-    if (HAL_SPI_Receive_IT(&hspi1, &temp_raw, 1) != HAL_OK) {
-      GYRO_CS_H(); spi_busy = 0;
-    }
-  }
-}
-
-void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
-{
-  if (hspi == &hspi1)
-  {
-    GYRO_CS_H();
-    spi_busy = 0;
-    next_due = HAL_GetTick() + TEMP_PERIOD_MS;
-  }
-}
 
 /* USER CODE END 4 */
 
