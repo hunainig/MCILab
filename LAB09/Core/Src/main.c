@@ -1,3 +1,5 @@
+
+// //TASK 3 -----------------------------------------------------------------------
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
@@ -56,7 +58,6 @@ SPI_HandleTypeDef hspi1;
 UART_HandleTypeDef huart1;
 
 
-
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -70,19 +71,14 @@ static void MX_USART1_UART_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* User variables */
-// const uint8_t LSM303AGR_7BIT_ADDR = 0x33;    // 7-bit address
-// const uint8_t LSM303AGR_WHO_AM_I = 0x0F;     // WHO_AM_I register
-// uint8_t dev_addr;                            // 8-bit HAL device address (7-bit << 1)
-// uint8_t whoami = 0;
-// #define LSM_A_ADDR_8 (0x19u << 1)
-// #define LSM_A_WHOAMI 0x0F
-// char msg[80];
+
 /* USER CODE END PFP */
 /* ---- integer-only printing of g-values ---- */
 #define GYRO_CS_GPIO_Port   GPIOE
 #define GYRO_CS_Pin         CS_I2C_SPI_Pin
 #define GYRO_CS_LOW()       HAL_GPIO_WritePin(GYRO_CS_GPIO_Port, GYRO_CS_Pin, GPIO_PIN_RESET)
 #define GYRO_CS_HIGH()      HAL_GPIO_WritePin(GYRO_CS_GPIO_Port, GYRO_CS_Pin, GPIO_PIN_SET)
+
 
 //GYROSCOPE
 /* ===== L3GD20 (on-board gyro) via SPI1 ===== */
@@ -145,7 +141,23 @@ static void gyro_read(gyro_t *g) {
   g->gy = y * GYRO_SENS_250DPS;
   g->gz = z * GYRO_SENS_250DPS;
 }
-
+//task3
+static void deg_to_text(char *dst, size_t n, float deg){
+  int32_t mdeg = (int32_t)((deg>=0)?(deg*1000.0f+0.5f):(deg*1000.0f-0.5f));
+  int32_t s = (mdeg<0); if(s) mdeg=-mdeg;
+  int32_t i = mdeg/1000, f = mdeg%1000;
+  if(s) snprintf(dst,n,"-%ld.%03ld",(long)i,(long)f);
+  else  snprintf(dst,n, "%ld.%03ld",(long)i,(long)f);
+}
+static float gyro_calibrate_bias_x(int samples, int delay_ms){
+  gyro_t g; float sum = 0.0f;
+  for(int i=0;i<samples;i++){
+    gyro_read(&g);
+    sum += g.gx;           // degrees/second
+    HAL_Delay(delay_ms);
+  }
+  return sum / samples;    // °/s bias
+}
 
 static void dps_to_text(char *dst, size_t n, float dps){
   int32_t mdps = (int32_t)((dps>=0)?(dps*1000.0f+0.5f):(dps*1000.0f-0.5f));
@@ -305,6 +317,7 @@ int main(void)
 MX_USB_DEVICE_Init();
 
   /* USER CODE BEGIN 2 */
+
 HAL_Delay(100);
 
 /* --- SPI CS idle high before any SPI use --- */
@@ -325,26 +338,43 @@ LSM_Accel_Calibrate(&a, 20);
 uint8_t gid = gyro_read_u8(GYRO_REG_WHOAMI);   // expect 0xD4 or 0xD7
 printf("Gyro WHO_AM_I=0x%02X\r\n", gid);
 gyro_init();
-/* Stream CSV every ~100 ms: ax, ay, az in g */
+/* --- Gyro bias calibration (keep board still) --- */
+uart_print("Calibrating gyro bias... keep board still (about 2s)\r\n");
+float gyro_bias_x = gyro_calibrate_bias_x(200, 10);  // ~2 seconds
+char bias_txt[16]; dps_to_text(bias_txt, sizeof bias_txt, gyro_bias_x);
+char line0[64]; snprintf(line0, sizeof line0, "GyroX bias=%s dps\r\n", bias_txt);
+uart_print(line0);
+
+/* --- Angle integrator state --- */
 gyro_t g;
+float angle_y = 0.0f;                   // integrate around Y-axis
+uint32_t t_prev = HAL_GetTick();        // timestamp for delta-t
+
 while (1) {
+  uint32_t t_now = HAL_GetTick();
+  float dt = (t_now - t_prev) * 0.001f; // seconds
+  t_prev = t_now;
 
-    /* USER CODE BEGIN 3 */
+  /* read sensors */
   gyro_read(&g);
+  LSM_Accel_Read(&a);
 
-  /* read accel and use Y */
-  LSM_Accel_Read(&a);   // 'a' already holds offsets from calibration
+  /* integrate gyro Y to angle */
+  float gy_nobias = g.gy - gyro_bias_x;   // remove bias
+  angle_y += gy_nobias * dt;              // integrate °/s → °
 
-  /* print: gx (dps), ay (g) using integer-only formatting */
-  char gy_txt[16], ay_txt[16], line[64];
-dps_to_text(gy_txt, sizeof gy_txt, g.gy);
-g_to_text(ay_txt, sizeof ay_txt, a.ay);
-snprintf(line, sizeof line, "GyroY=%s dps, AccY=%s g\r\n", gy_txt, ay_txt);
+  /* convert to text */
+  char ay_txt[16], gy_txt[16], ang_txt[16], line[96];
+  g_to_text(ay_txt, sizeof ay_txt, a.ay);       // g
+  dps_to_text(gy_txt, sizeof gy_txt, g.gy);     // °/s
+  deg_to_text(ang_txt, sizeof ang_txt, angle_y); // °
 
+  snprintf(line, sizeof(line), "AccY=%s g, GyroY=%s dps, AngleY=%s deg\r\n",
+           ay_txt, gy_txt, ang_txt);
   uart_print(line);
 
-  HAL_Delay(100);
-  }
+  HAL_Delay(100);  // 10 Hz output
+}
   /* USER CODE END 3 */
 }
 /**
@@ -615,5 +645,3 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
-
-//TASK 3 -----------------------------------------------------------------------
