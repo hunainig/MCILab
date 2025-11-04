@@ -22,8 +22,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdlib.h> // Include for Malloc(), Calloc(), Free() functions
-#include <string.h>  // Include for strlen() function
+#include "heap_driver.h"
+#include <string.h>
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -59,28 +60,15 @@ static void MX_I2C1_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
-#define n 10 // Number of elements for the arrays
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-#include <stdarg.h>  // make sure this is included at the top
-
-static void uart_print(const char *s)
-{
-  if (s == NULL) return;
-  HAL_UART_Transmit(&huart1, (uint8_t *)s, (uint16_t)strlen(s), HAL_MAX_DELAY);
+void print_uart(const char* msg) {
+  HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
 }
 
-static void uart_printf(const char *fmt, ...)
-{
-  char buf[128];
-  va_list args;
-  va_start(args, fmt);
-  vsnprintf(buf, sizeof(buf), fmt, args);
-  va_end(args);
-  uart_print(buf);
-}
 /* USER CODE END 0 */
 
 /**
@@ -117,54 +105,52 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-
-  // Dynamically allocate memory using malloc()
-  int *arr_malloc = (int*)malloc(n * sizeof(int));  // Allocate memory for 'n' integers using malloc()
-  if (arr_malloc == NULL)  // Check if malloc() was successful
-  {
-    // Handle memory allocation failure (error)
-    Error_Handler();
-  }
   
-  // Dynamically allocate memory using calloc()
-  int *arr_calloc = (int*)calloc(n, sizeof(int));  // Allocate memory for 'n' integers using calloc()
-  if (arr_calloc == NULL)  // Check if calloc() was successful
-  {
-    // Handle memory allocation failure (error)
-    Error_Handler();
-  }
-  uart_print("Before Initialization\r\n");
-  uart_print("Index | arr_malloc | arr_calloc\r\n");
-  for (int i = 0; i < n; i++)
-  {
-      uart_printf("%5d | %10d | %10d\r\n", i, arr_malloc[i], arr_calloc[i]);
+  // Print a message over UART to indicate the start of the test.
+  print_uart("=== Custom Heap Driver (Direct SRAM) ===\r\n");
+
+  // Initialize the custom heap allocator.
+  // This function sets up internal memory structures (e.g., the block_map array)
+  // so that all heap memory is marked as free.
+  // It MUST be called before using heap_alloc or heap_free.
+  heap_init();
+
+  // Allocate 32 bytes from the heap.
+  // heap_alloc returns a pointer to a memory region in SRAM that is at least 32 bytes long.
+  // We cast the void* return type to char* so we can use string functions like strcpy.
+  char* block1 = (char*)heap_alloc(32);
+
+  // Allocate 48 bytes from the heap.
+  char* block2 = (char*)heap_alloc(48);
+
+  // Check if both allocations were successful (i.e., the returned pointers are not NULL).
+  if (block1 && block2) {
+      // If successful, store strings into the allocated memory regions.
+      // Since the memory comes from our own heap allocator, we assume it behaves like malloc.
+      strcpy(block1, "Data in Block 1");    // Copy string into the memory allocated in block1
+      strcpy(block2, "Text from Block 2");  // Copy string into the memory allocated in block2
+
+      // Print the contents of both blocks over UART.
+      // This confirms that memory was correctly allocated and can be accessed.
+      print_uart(block1); 
+      print_uart("\r\n");
+      print_uart(block2); 
+      print_uart("\r\n");
+
+  } else {
+      // If either allocation failed (due to insufficient memory or a bug), print an error message.
+      print_uart("Allocation failed.\r\n");
   }
 
-  // Initializing arrays with the required values
-  for (int i = 0; i < n; i++)
-  {
-    arr_malloc[i] = i * 2;  // Initialize arr_malloc where each element = i * 2
-    arr_calloc[i] = i + 1;  // Initialize arr_calloc where each element = i + 1
-  }
+  // Free the memory blocks that were previously allocated.
+  // This makes them available again for future calls to heap_alloc.
+  // It's important to always free memory when you're done using it to avoid memory leaks.
+  heap_free(block1);
+  heap_free(block2);
 
-  // Print the contents of both arrays using UART with proper formatting
-  uart_print("After Initialization\r\n");
-  uart_print("Index | arr_malloc | arr_calloc\r\n");
-  for (int i = 0; i < n; i++)
-  {
-      uart_printf("%5d | %10d | %10d\r\n", i, arr_malloc[i], arr_calloc[i]);
-  }
-  
-  // Deallocate both arrays using free()
-  free(arr_malloc);
-  free(arr_calloc);
+  // Print a confirmation that memory has been freed.
+  print_uart("Blocks freed.\r\n");
 
-  // Set pointers to NULL after deallocation to prevent dangling references
-  arr_malloc = NULL;
-  arr_calloc = NULL;
-
-  // Display a message indicating that memory has been successfully freed
-  uart_print("Memory deallocated successfully.\n");
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -423,7 +409,8 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
-#ifdef USE_FULL_ASSERT
+
+#ifdef  USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.
