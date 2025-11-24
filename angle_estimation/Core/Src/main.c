@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <string.h>
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -51,6 +52,45 @@ UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
 volatile uint8_t do10Hz = 0;        // set in ISR, consumed in while(1)
+
+/* -------- LSM303AGR (Accel over I2C) -------- */
+#define LSM_A_ADDR_W      0x32   // 8-bit write addr
+#define LSM_A_ADDR_R      0x33   // 8-bit read addr
+#define LSM_A_CTRL1       0x20
+#define LSM_A_CTRL4       0x23
+#define LSM_A_OUT_X_L     0x28
+#define LSM_A_AUTO_INC    0x80
+#define LSM_A_G_PER_LSB   0.0039f   // 3.9 mg/LSB -> g
+
+/* -------- L3GD20 / I3G4250D style Gyro over SPI -------- */
+#define GYRO_REG_WHOAMI    0x0F
+#define GYRO_REG_CTRL1     0x20
+#define GYRO_REG_CTRL4     0x23
+#define GYRO_REG_OUT_X_L   0x28
+#define GYRO_SPI_READ      0x80
+#define GYRO_SPI_AUTO_INC  0x40
+
+#define GYRO_CS_LOW()   HAL_GPIO_WritePin(GPIOE, CS_I2C_SPI_Pin, GPIO_PIN_RESET)
+#define GYRO_CS_HIGH()  HAL_GPIO_WritePin(GPIOE, CS_I2C_SPI_Pin, GPIO_PIN_SET)
+
+/* Sensitivity for ±250 dps full-scale (typical L3GD20) */
+#define GYRO_DPS_PER_LSB  0.00875f  // 8.75 mdps/LSB
+
+typedef struct {
+    // raw
+    int16_t arx, ary, arz;
+    int16_t grx, gry, grz;
+
+    // scaled (physical)
+    float ax, ay, az;   // g
+    float gx, gy, gz;   // dps
+
+    // offsets
+    float ax_off, ay_off, az_off;
+    float gx_off, gy_off, gz_off;
+} imu_t;
+
+static imu_t imu;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -61,12 +101,168 @@ static void MX_SPI1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
+/* accel */
+HAL_StatusTypeDef LSM_Accel_Init(void);
+HAL_StatusTypeDef LSM_Accel_Read(imu_t *m);
 
+/* gyro */
+uint8_t gyro_read_u8(uint8_t reg);
+void    gyro_write_u8(uint8_t reg, uint8_t val);
+void    gyro_init_basic(void);
+HAL_StatusTypeDef Gyro_Read(imu_t *m);
+
+/* calibration */
+void Offset_Calibrate(imu_t *m);
+
+/* retarget printf -> UART */
+int _write(int file, char *data, int len);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+/* ---------- LSM303AGR accel ---------- */
+HAL_StatusTypeDef LSM_Accel_Init(void)
+{
+    uint8_t v;
 
+    // CTRL1_A = 0x63 per lab (ODR 100Hz, all axes ON, normal mode)
+    v = 0x63;
+    if (HAL_I2C_Mem_Write(&hi2c1, LSM_A_ADDR_W, LSM_A_CTRL1,
+                          I2C_MEMADD_SIZE_8BIT, &v, 1, 100) != HAL_OK)
+        return HAL_ERROR;
+
+    // CTRL4_A = 0x00 per lab (±2g normal mode)
+    v = 0x00;
+    if (HAL_I2C_Mem_Write(&hi2c1, LSM_A_ADDR_W, LSM_A_CTRL4,
+                          I2C_MEMADD_SIZE_8BIT, &v, 1, 100) != HAL_OK)
+        return HAL_ERROR;
+
+    HAL_Delay(10);
+    return HAL_OK;
+}
+
+HAL_StatusTypeDef LSM_Accel_Read(imu_t *m)
+{
+    uint8_t buf[6];
+
+    if (HAL_I2C_Mem_Read(&hi2c1, LSM_A_ADDR_R, (LSM_A_OUT_X_L | LSM_A_AUTO_INC),
+                         I2C_MEMADD_SIZE_8BIT, buf, 6, 100) != HAL_OK)
+        return HAL_ERROR;
+
+    m->arx = (int16_t)((buf[1] << 8) | buf[0]);
+    m->ary = (int16_t)((buf[3] << 8) | buf[2]);
+    m->arz = (int16_t)((buf[5] << 8) | buf[4]);
+
+    // left-justified 10-bit -> right shift by 6
+    int16_t rx = m->arx >> 6;
+    int16_t ry = m->ary >> 6;
+    int16_t rz = m->arz >> 6;
+
+    m->ax = rx * LSM_A_G_PER_LSB - m->ax_off;
+    m->ay = ry * LSM_A_G_PER_LSB - m->ay_off;
+    m->az = rz * LSM_A_G_PER_LSB - m->az_off;
+
+    return HAL_OK;
+}
+
+/* ---------- Gyro SPI helpers ---------- */
+uint8_t gyro_read_u8(uint8_t reg)
+{
+    uint8_t header = (reg & 0x3F) | GYRO_SPI_READ;
+    uint8_t v = 0;
+
+    GYRO_CS_LOW();
+    HAL_SPI_Transmit(&hspi1, &header, 1, 100);
+    HAL_SPI_Receive(&hspi1, &v, 1, 100);
+    GYRO_CS_HIGH();
+
+    return v;
+}
+
+void gyro_write_u8(uint8_t reg, uint8_t val)
+{
+    uint8_t tx[2] = { (uint8_t)(reg & 0x3F), val };
+    GYRO_CS_LOW();
+    HAL_SPI_Transmit(&hspi1, tx, 2, 100);
+    GYRO_CS_HIGH();
+}
+
+void gyro_init_basic(void)
+{
+    // CTRL1: power on, enable XYZ, ODR ~95/100Hz (0x0F + ODR bits)
+    gyro_write_u8(GYRO_REG_CTRL1, 0x0F);
+
+    // CTRL4: ±250 dps full-scale
+    gyro_write_u8(GYRO_REG_CTRL4, 0x00);
+
+    HAL_Delay(10);
+}
+
+HAL_StatusTypeDef Gyro_Read(imu_t *m)
+{
+    uint8_t header = (GYRO_REG_OUT_X_L & 0x3F) | GYRO_SPI_READ | GYRO_SPI_AUTO_INC;
+    uint8_t buf[6];
+
+    GYRO_CS_LOW();
+    if (HAL_SPI_Transmit(&hspi1, &header, 1, 100) != HAL_OK) {
+        GYRO_CS_HIGH();
+        return HAL_ERROR;
+    }
+    if (HAL_SPI_Receive(&hspi1, buf, 6, 100) != HAL_OK) {
+        GYRO_CS_HIGH();
+        return HAL_ERROR;
+    }
+    GYRO_CS_HIGH();
+
+    m->grx = (int16_t)((buf[1] << 8) | buf[0]);
+    m->gry = (int16_t)((buf[3] << 8) | buf[2]);
+    m->grz = (int16_t)((buf[5] << 8) | buf[4]);
+
+    m->gx = m->grx * GYRO_DPS_PER_LSB - m->gx_off;
+    m->gy = m->gry * GYRO_DPS_PER_LSB - m->gy_off;
+    m->gz = m->grz * GYRO_DPS_PER_LSB - m->gz_off;
+
+    return HAL_OK;
+}
+
+/* ---------- Offset calibration ---------- */
+void Offset_Calibrate(imu_t *m)
+{
+    const int N = 20;
+    float sax=0, say=0, saz=0;
+    float sgx=0, sgy=0, sgz=0;
+
+    // ensure offsets start at 0 during calibration
+    m->ax_off = m->ay_off = m->az_off = 0;
+    m->gx_off = m->gy_off = m->gz_off = 0;
+
+    for (int i=0; i<N; i++)
+    {
+        LSM_Accel_Read(m);
+        Gyro_Read(m);
+
+        sax += m->ax; say += m->ay; saz += m->az;
+        sgx += m->gx; sgy += m->gy; sgz += m->gz;
+
+        HAL_Delay(10);
+    }
+
+    m->ax_off = sax / N;
+    m->ay_off = say / N;
+    // subtract gravity so Z becomes ~0 when flat
+    m->az_off = (saz / N) - 1.0f;
+
+    m->gx_off = sgx / N;
+    m->gy_off = sgy / N;
+    m->gz_off = sgz / N;
+}
+
+/* ---------- printf retarget ---------- */
+int _write(int file, char *data, int len)
+{
+    HAL_UART_Transmit(&huart1, (uint8_t*)data, len, HAL_MAX_DELAY);
+    return len;
+}
 /* USER CODE END 0 */
 
 /**
@@ -83,7 +279,6 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-
   HAL_Init();
 
   /* USER CODE BEGIN Init */
@@ -104,28 +299,58 @@ int main(void)
   MX_TIM2_Init();
   MX_USART1_UART_Init();
   MX_USB_DEVICE_Init();
-/* USER CODE BEGIN 2 */
-HAL_TIM_Base_Start_IT(&htim2);   // start TIM2 in interrupt mode (125 Hz)
-/* USER CODE END 2 */
+  /* USER CODE BEGIN 2 */
+  HAL_TIM_Base_Start_IT(&htim2);   // start TIM2 in interrupt mode (100 Hz)
 
+  // init accel
+  if (HAL_I2C_IsDeviceReady(&hi2c1, LSM_A_ADDR_W, 3, 50) == HAL_OK) {
+      if (LSM_Accel_Init() == HAL_OK)
+          printf("LSM accel init OK\r\n");
+      else
+          printf("LSM accel init FAIL\r\n");
+  } else {
+      printf("LSM accel not found on I2C\r\n");
+  }
+
+  // init gyro (SPI)
+  gyro_init_basic();
+  printf("Gyro WHOAMI=0x%02X\r\n", gyro_read_u8(GYRO_REG_WHOAMI));
+
+  // offset calibration (keep board still)
+  printf("Calibrating offsets...\r\n");
+  Offset_Calibrate(&imu);
+  printf("Done.\r\n");
+
+  /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
-    if (do10Hz)                 // ~every 100 ms
+    if (do10Hz)
     {
-        do10Hz = 0;             // clear flag ASAP
+        do10Hz = 0;
 
-        // Toggle another GPIO at 10 Hz (PB0 used here)
-        HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
+        if (LSM_Accel_Read(&imu) == HAL_OK && Gyro_Read(&imu) == HAL_OK)
+        {
+            // OPTION A: integer CSV (works without float printf)
+            int ax_mg = (int)(imu.ax *1000.0f);
+            int ay_mg = (int)(imu.ay *1000.0f);
+            int az_mg = (int)(imu.az *1000.0f);
 
-        // Optional: send a UART heartbeat at 10 Hz
-        const char *msg = "10Hz tick\r\n";
-        HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), 10);
+            int gx_mdps = (int)(imu.gx);
+            int gy_mdps = (int)(imu.gy);
+            int gz_mdps = (int)(imu.gz);
+
+            char buf[128];
+            int n = snprintf(buf, sizeof(buf),
+                "%d,%d,%d,%d,%d,%d\r\n",
+                ax_mg, ay_mg, az_mg,
+                gx_mdps, gy_mdps, gz_mdps);
+
+            HAL_UART_Transmit(&huart1, (uint8_t*)buf, n, 100);
+        }
     }
-    /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
@@ -247,7 +472,7 @@ static void MX_SPI1_Init(void)
   hspi1.Instance = SPI1;
   hspi1.Init.Mode = SPI_MODE_MASTER;
   hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi1.Init.DataSize = SPI_DATASIZE_4BIT;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi1.Init.CLKPolarity = SPI_POLARITY_HIGH;
   hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
@@ -376,6 +601,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+
   /*Configure GPIO pins : DRDY_Pin MEMS_INT3_Pin MEMS_INT4_Pin MEMS_INT1_Pin
                            MEMS_INT2_Pin */
   GPIO_InitStruct.Pin = DRDY_Pin|MEMS_INT3_Pin|MEMS_INT4_Pin|MEMS_INT1_Pin
@@ -401,6 +629,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PB0 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
