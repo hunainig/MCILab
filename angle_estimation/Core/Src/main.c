@@ -24,6 +24,9 @@
 /* USER CODE BEGIN Includes */
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
+#define RAD_TO_DEG 57.2958f
+#define DT_SEC     0.1f     // because do10Hz fires every 100 ms
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -91,6 +94,7 @@ typedef struct {
 } imu_t;
 
 static imu_t imu;
+static float angle_deg = 0.0f;   // fused angle around X axis
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -125,16 +129,14 @@ HAL_StatusTypeDef LSM_Accel_Init(void)
 {
     uint8_t v;
 
-    // CTRL1_A = 0x63 per lab (ODR 100Hz, all axes ON, normal mode)
-    v = 0x63;
-    if (HAL_I2C_Mem_Write(&hi2c1, LSM_A_ADDR_W, LSM_A_CTRL1,
-                          I2C_MEMADD_SIZE_8BIT, &v, 1, 100) != HAL_OK)
+    v = 0x67;  // CTRL1_A: 200Hz, all axes ON, normal mode
+    if (HAL_I2C_Mem_Write(&hi2c1, 0x32, 0x20,
+                         I2C_MEMADD_SIZE_8BIT, &v, 1, 100) != HAL_OK)
         return HAL_ERROR;
 
-    // CTRL4_A = 0x00 per lab (±2g normal mode)
-    v = 0x00;
-    if (HAL_I2C_Mem_Write(&hi2c1, LSM_A_ADDR_W, LSM_A_CTRL4,
-                          I2C_MEMADD_SIZE_8BIT, &v, 1, 100) != HAL_OK)
+    v = 0x00;  // CTRL4_A: ±2g, normal mode
+    if (HAL_I2C_Mem_Write(&hi2c1, 0x32, 0x23,
+                         I2C_MEMADD_SIZE_8BIT, &v, 1, 100) != HAL_OK)
         return HAL_ERROR;
 
     HAL_Delay(10);
@@ -168,55 +170,45 @@ HAL_StatusTypeDef LSM_Accel_Read(imu_t *m)
 /* ---------- Gyro SPI helpers ---------- */
 uint8_t gyro_read_u8(uint8_t reg)
 {
-    uint8_t header = (reg & 0x3F) | GYRO_SPI_READ;
-    uint8_t v = 0;
+    uint8_t tx[2] = { (uint8_t)(reg | 0x80), 0x00 };
+    uint8_t rx[2] = {0};
 
     GYRO_CS_LOW();
-    HAL_SPI_Transmit(&hspi1, &header, 1, 100);
-    HAL_SPI_Receive(&hspi1, &v, 1, 100);
+    HAL_SPI_TransmitReceive(&hspi1, tx, rx, 2, HAL_MAX_DELAY);
     GYRO_CS_HIGH();
 
-    return v;
+    return rx[1];
 }
 
 void gyro_write_u8(uint8_t reg, uint8_t val)
 {
-    uint8_t tx[2] = { (uint8_t)(reg & 0x3F), val };
+    uint8_t tx[2] = { (uint8_t)(reg & 0x7F), val };
+
     GYRO_CS_LOW();
-    HAL_SPI_Transmit(&hspi1, tx, 2, 100);
+    HAL_SPI_Transmit(&hspi1, tx, 2, HAL_MAX_DELAY);
     GYRO_CS_HIGH();
 }
 
 void gyro_init_basic(void)
 {
-    // CTRL1: power on, enable XYZ, ODR ~95/100Hz (0x0F + ODR bits)
-    gyro_write_u8(GYRO_REG_CTRL1, 0x0F);
-
-    // CTRL4: ±250 dps full-scale
-    gyro_write_u8(GYRO_REG_CTRL4, 0x00);
-
-    HAL_Delay(10);
+    gyro_write_u8(GYRO_REG_CTRL1, 0x0F);  // power on + XYZ enable
+    gyro_write_u8(GYRO_REG_CTRL4, 0x00);  // ±245 dps
+    HAL_Delay(50);
 }
 
 HAL_StatusTypeDef Gyro_Read(imu_t *m)
 {
-    uint8_t header = (GYRO_REG_OUT_X_L & 0x3F) | GYRO_SPI_READ | GYRO_SPI_AUTO_INC;
-    uint8_t buf[6];
+    // Read each axis low/high separately
+    uint8_t xl = gyro_read_u8(0x28);  // OUT_X_L
+    uint8_t xh = gyro_read_u8(0x29);  // OUT_X_H
+    uint8_t yl = gyro_read_u8(0x2A);  // OUT_Y_L
+    uint8_t yh = gyro_read_u8(0x2B);  // OUT_Y_H
+    uint8_t zl = gyro_read_u8(0x2C);  // OUT_Z_L
+    uint8_t zh = gyro_read_u8(0x2D);  // OUT_Z_H
 
-    GYRO_CS_LOW();
-    if (HAL_SPI_Transmit(&hspi1, &header, 1, 100) != HAL_OK) {
-        GYRO_CS_HIGH();
-        return HAL_ERROR;
-    }
-    if (HAL_SPI_Receive(&hspi1, buf, 6, 100) != HAL_OK) {
-        GYRO_CS_HIGH();
-        return HAL_ERROR;
-    }
-    GYRO_CS_HIGH();
-
-    m->grx = (int16_t)((buf[1] << 8) | buf[0]);
-    m->gry = (int16_t)((buf[3] << 8) | buf[2]);
-    m->grz = (int16_t)((buf[5] << 8) | buf[4]);
+    m->grx = (int16_t)((xh << 8) | xl);
+    m->gry = (int16_t)((yh << 8) | yl);
+    m->grz = (int16_t)((zh << 8) | zl);
 
     m->gx = m->grx * GYRO_DPS_PER_LSB - m->gx_off;
     m->gy = m->gry * GYRO_DPS_PER_LSB - m->gy_off;
@@ -314,7 +306,11 @@ int main(void)
 
   // init gyro (SPI)
   gyro_init_basic();
-  printf("Gyro WHOAMI=0x%02X\r\n", gyro_read_u8(GYRO_REG_WHOAMI));
+  uint8_t who = gyro_read_u8(GYRO_REG_WHOAMI);
+  printf("GYRO WHOAMI=0x%02X\r\n", who);
+  if (who != 0xD3) {
+      printf("WHOAMI mismatch -> SPI path/CS wrong!\r\n");
+  }
 
   // offset calibration (keep board still)
   printf("Calibrating offsets...\r\n");
@@ -327,29 +323,36 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    if (do10Hz)
     {
+      if (do10Hz)
+      {
         do10Hz = 0;
-
         if (LSM_Accel_Read(&imu) == HAL_OK && Gyro_Read(&imu) == HAL_OK)
         {
-            // OPTION A: integer CSV (works without float printf)
-            int ax_mg = (int)(imu.ax *1000.0f);
-            int ay_mg = (int)(imu.ay *1000.0f);
-            int az_mg = (int)(imu.az *1000.0f);
+            /* ---------- 1) accel tilt angle (deg) ---------- */
+            // If lab wants angle from accX, use ax vs az:
+            float acc_angle_deg = atan2f(imu.ay, imu.az) * RAD_TO_DEG;
 
-            int gx_mdps = (int)(imu.gx);
-            int gy_mdps = (int)(imu.gy);
-            int gz_mdps = (int)(imu.gz);
+            // If lab wants roll instead, swap to atan2f(imu.ay, imu.az)
 
-            char buf[128];
+            /* ---------- 2) gyro integration ---------- */
+            float gyro_angle_delta = imu.gy * DT_SEC;   // gx (deg/s) * dt (s) = deg
+
+            /* ---------- 3) complementary filter ---------- */
+            angle_deg = 0.98f * (angle_deg + gyro_angle_delta)
+                      + 0.02f * acc_angle_deg;
+
+            /* ---------- 4) print CSV floats: accX, gyroX, angle ---------- */
+            char buf[80];
             int n = snprintf(buf, sizeof(buf),
-                "%d,%d,%d,%d,%d,%d\r\n",
-                ax_mg, ay_mg, az_mg,
-                gx_mdps, gy_mdps, gz_mdps);
+                             "%.3f,%.3f,%.3f\r\n",
+                             acc_angle_deg,   // accX in degrees
+                             imu.gy,          // gyroY in deg/s
+                             angle_deg);      // fused angle in degrees
 
             HAL_UART_Transmit(&huart1, (uint8_t*)buf, n, 100);
         }
+      }
     }
   }
   /* USER CODE END 3 */
@@ -476,7 +479,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_HIGH;
   hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;

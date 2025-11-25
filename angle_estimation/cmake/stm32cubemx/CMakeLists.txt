@@ -80,7 +80,8 @@ set(MX_LINK_DIRS
 set(MX_LINK_LIBS 
     STM32_Drivers
     ${TOOLCHAIN_LINK_LIBRARIES}
-    USB_Device_Library	
+    USB_Device_Library
+	
 )
 # Interface library for includes and symbols
 add_library(stm32cubemx INTERFACE)
@@ -106,6 +107,11 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${MX_LINK_DIRS})
 
 # Add libraries to the project
 target_link_libraries(${CMAKE_PROJECT_NAME} ${MX_LINK_LIBS})
+
+# ✅ Enable float printf (newlib-nano)
+target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
+    "-Wl,-u,_printf_float"
+)
 
 # Add the map file to the list of files to be removed with 'clean' target
 set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES ADDITIONAL_CLEAN_FILES ${CMAKE_PROJECT_NAME}.map)
