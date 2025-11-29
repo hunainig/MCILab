@@ -36,6 +36,36 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+// ---- Motor pins (from your working code) ----
+// DIR1 = PA9, DIR2 = PA10 on Keyestudio shield
+#define DIR1_PORT GPIOA
+#define DIR1_PIN  GPIO_PIN_9
+#define DIR2_PORT GPIOA
+#define DIR2_PIN  GPIO_PIN_10
+
+// PWM uses TIM3 CH1 (same as your working code)
+#define PWM_TIMER   htim3
+#define PWM_CH      TIM_CHANNEL_1
+#define PWM_MAX     999   // because TIM3 period = 999 in your working code
+
+// ---- Motor B pins (your wiring) ----
+// DIR3 = PC8, DIR4 = PC9
+#define DIR3_PORT GPIOC
+#define DIR3_PIN  GPIO_PIN_8
+#define DIR4_PORT GPIOC
+#define DIR4_PIN  GPIO_PIN_9
+
+// PWM B uses TIM3 CH2 on PC7 (your wiring)
+#define PWM_CH_B  TIM_CHANNEL_2
+
+// ---- Motor helper prototypes ----
+void Motor_SetDirection_CW_Both(void);
+void Motor_SetDirection_CCW_Both(void);
+void Motor_SetPWM_Both(uint16_t pwm);
+
+void MotorB_SetDirection_CW(void);
+void MotorB_SetDirection_CCW(void);
+void MotorB_SetPWM(uint16_t pwm);
 
 /* USER CODE END PD */
 
@@ -50,8 +80,10 @@ I2C_HandleTypeDef hi2c1;
 SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim3;
 
 UART_HandleTypeDef huart1;
+UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 volatile uint8_t do10Hz = 0;        // set in ISR, consumed in while(1)
@@ -94,7 +126,7 @@ typedef struct {
 } imu_t;
 
 static imu_t imu;
-static float angle_deg = 0.0f;   // fused angle around X axis
+static float angle_deg = 0.0f;   // fused angle around X axisz
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -104,6 +136,8 @@ static void MX_I2C1_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_USART1_UART_Init(void);
+static void MX_USART2_UART_Init(void);
+static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 /* accel */
 HAL_StatusTypeDef LSM_Accel_Init(void);
@@ -255,6 +289,52 @@ int _write(int file, char *data, int len)
     HAL_UART_Transmit(&huart1, (uint8_t*)data, len, HAL_MAX_DELAY);
     return len;
 }
+
+// ---------------- Motor helpers ----------------
+void Motor_SetDirection_CW_Both(void)
+{
+    // Forward/CW (same as your working code)
+    HAL_GPIO_WritePin(DIR1_PORT, DIR1_PIN, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(DIR2_PORT, DIR2_PIN, GPIO_PIN_RESET);
+}
+
+void Motor_SetDirection_CCW_Both(void)
+{
+    // Reverse/CCW
+    HAL_GPIO_WritePin(DIR1_PORT, DIR1_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(DIR2_PORT, DIR2_PIN, GPIO_PIN_SET);
+}
+
+void Motor_SetPWM_Both(uint16_t pwm)
+{
+    if (pwm > PWM_MAX) pwm = PWM_MAX;
+    __HAL_TIM_SET_COMPARE(&htim3, PWM_CH, pwm);
+}
+
+// ---------------- Motor B helpers ----------------
+void MotorB_SetDirection_CW(void)
+{
+    HAL_GPIO_WritePin(DIR3_PORT, DIR3_PIN, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(DIR4_PORT, DIR4_PIN, GPIO_PIN_RESET);
+}
+
+void MotorB_SetDirection_CCW(void)
+{
+    HAL_GPIO_WritePin(DIR3_PORT, DIR3_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(DIR4_PORT, DIR4_PIN, GPIO_PIN_SET);
+}
+
+void MotorB_SetPWM(uint16_t pwm)
+{
+    if (pwm > PWM_MAX) pwm = PWM_MAX;
+    __HAL_TIM_SET_COMPARE(&htim3, PWM_CH_B, pwm);
+}
+
+
+static void BT_Send(const char *s)
+{
+    HAL_UART_Transmit(&huart2, (uint8_t*)s, strlen(s), HAL_MAX_DELAY);
+}
 /* USER CODE END 0 */
 
 /**
@@ -270,8 +350,7 @@ int main(void)
 
   /* MCU Configuration--------------------------------------------------------*/
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -291,6 +370,8 @@ int main(void)
   MX_TIM2_Init();
   MX_USART1_UART_Init();
   MX_USB_DEVICE_Init();
+  MX_USART2_UART_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim2);   // start TIM2 in interrupt mode (100 Hz)
 
@@ -317,43 +398,113 @@ int main(void)
   Offset_Calibrate(&imu);
   printf("Done.\r\n");
 
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
+
+  printf("Motor test start...\r\n");
+
+  // BOTH forward 3 sec
+  Motor_SetDirection_CW_Both();
+  MotorB_SetDirection_CW();
+  Motor_SetPWM_Both(700);
+  MotorB_SetPWM(700);
+  HAL_Delay(3000);
+
+  // BOTH stop 1 sec
+  Motor_SetPWM_Both(0);
+  MotorB_SetPWM(0);
+  HAL_Delay(1000);
+
+  // BOTH reverse 3 sec
+  Motor_SetDirection_CCW_Both();
+  MotorB_SetDirection_CCW();
+  Motor_SetPWM_Both(700);
+  MotorB_SetPWM(700);
+  HAL_Delay(3000);
+
+  // BOTH stop
+  Motor_SetPWM_Both(0);
+  MotorB_SetPWM(0);
+
+  printf("Motor test done.\r\n");
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    {
-      if (do10Hz)
-      {
-        do10Hz = 0;
-        if (LSM_Accel_Read(&imu) == HAL_OK && Gyro_Read(&imu) == HAL_OK)
-        {
-            /* ---------- 1) accel tilt angle (deg) ---------- */
-            // If lab wants angle from accX, use ax vs az:
-            float acc_angle_deg = atan2f(imu.ay, imu.az) * RAD_TO_DEG;
+    /* USER CODE END WHILE */
 
-            // If lab wants roll instead, swap to atan2f(imu.ay, imu.az)
+    /* USER CODE BEGIN 3 */
+    // if (do10Hz)
+    // {
+    // do10Hz = 0;
 
-            /* ---------- 2) gyro integration ---------- */
-            float gyro_angle_delta = imu.gy * DT_SEC;   // gx (deg/s) * dt (s) = deg
+    // if (LSM_Accel_Read(&imu) == HAL_OK && Gyro_Read(&imu) == HAL_OK)
+    // {
+    //     // 1) accel angle
+    //     float acc_angle_deg = atan2f(imu.ay, imu.az) * RAD_TO_DEG;
 
-            /* ---------- 3) complementary filter ---------- */
-            angle_deg = 0.98f * (angle_deg + gyro_angle_delta)
-                      + 0.02f * acc_angle_deg;
+    //     // 2) gyro integrate
+    //     float gyro_angle_delta = imu.gy * DT_SEC;
 
-            /* ---------- 4) print CSV floats: accX, gyroX, angle ---------- */
-            char buf[80];
-            int n = snprintf(buf, sizeof(buf),
-                             "%.3f,%.3f,%.3f\r\n",
-                             acc_angle_deg,   // accX in degrees
-                             imu.gy,          // gyroY in deg/s
-                             angle_deg);      // fused angle in degrees
+    //     // 3) complementary filter
+    //     angle_deg = 0.98f * (angle_deg + gyro_angle_delta)
+    //               + 0.02f * acc_angle_deg;
 
-            HAL_UART_Transmit(&huart1, (uint8_t*)buf, n, 100);
-        }
-      }
-    }
+    //     // 4) PD / PID controller (needs at least 2 terms)
+    //     static float integral = 0.0f;
+    //     static float prev_error = 0.0f;
+
+    //     float setpoint = 0.0f;
+    //     float error = setpoint - angle_deg;
+
+    //     float Kp = 25.0f;
+    //     float Ki = 0.0f;     // when you want PI/PID, increase this
+    //     float Kd = 1.5f;
+
+    //     integral += error * DT_SEC;
+    //     float derivative = (error - prev_error) / DT_SEC;
+    //     prev_error = error;
+
+    //     // anti-windup
+    //     if (integral > 50.0f) integral = 50.0f;
+    //     if (integral < -50.0f) integral = -50.0f;
+
+    //     float u = Kp*error + Ki*integral + Kd*derivative;
+
+    //     // clamp to PWM range
+    //     if (u > PWM_MAX)  u = PWM_MAX;
+    //     if (u < -PWM_MAX) u = -PWM_MAX;
+
+    //     if (u >= 0) {
+    //         Motor_SetDirection_CW_Both();
+    //         Motor_SetPWM_Both((uint16_t)u);
+    //     } else {
+    //         Motor_SetDirection_CCW_Both();
+    //         Motor_SetPWM_Both((uint16_t)(-u));
+    //     }
+
+    //     // 5) Bluetooth stream
+    //     char buf[80];
+    //     int n = snprintf(buf, sizeof(buf),
+    //                      "%.3f,%.3f,%.3f\r\n",
+    //                      acc_angle_deg,
+    //                      imu.gy,
+    //                      angle_deg);
+
+    //     HAL_UART_Transmit(&huart1, (uint8_t*)buf, n, 100);   // terminal
+    //     HAL_UART_Transmit(&huart2, (uint8_t*)buf, n, HAL_MAX_DELAY); // bluetooth
+    //   }
+    // }
+    // temp motor run
+    Motor_SetDirection_CW_Both();
+    MotorB_SetDirection_CW();
+    Motor_SetPWM_Both(700);
+    MotorB_SetPWM(700);
+
+    HAL_Delay(10); // tiny delay so you’re not spamming registers
   }
   /* USER CODE END 3 */
 }
@@ -398,8 +549,9 @@ void SystemClock_Config(void)
     Error_Handler();
   }
   PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB|RCC_PERIPHCLK_USART1
-                              |RCC_PERIPHCLK_I2C1;
+                              |RCC_PERIPHCLK_USART2|RCC_PERIPHCLK_I2C1;
   PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK2;
+  PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
   PeriphClkInit.I2c1ClockSelection = RCC_I2C1CLKSOURCE_HSI;
   PeriphClkInit.USBClockSelection = RCC_USBCLKSOURCE_PLL;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
@@ -479,7 +631,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_HIGH;
   hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -543,6 +695,59 @@ static void MX_TIM2_Init(void)
 }
 
 /**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 71;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 999;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+  HAL_TIM_MspPostInit(&htim3);
+
+}
+
+/**
   * @brief USART1 Initialization Function
   * @param None
   * @retval None
@@ -578,6 +783,41 @@ static void MX_USART1_UART_Init(void)
 }
 
 /**
+  * @brief USART2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART2_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART2_Init 0 */
+
+  /* USER CODE END USART2_Init 0 */
+
+  /* USER CODE BEGIN USART2_Init 1 */
+
+  /* USER CODE END USART2_Init 1 */
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART2_Init 2 */
+
+  /* USER CODE END USART2_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -602,10 +842,13 @@ static void MX_GPIO_Init(void)
                           |LD6_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8|GPIO_PIN_9, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9|GPIO_PIN_10, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : DRDY_Pin MEMS_INT3_Pin MEMS_INT4_Pin MEMS_INT1_Pin
                            MEMS_INT2_Pin */
@@ -626,19 +869,26 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PA0 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
   /*Configure GPIO pin : PB0 */
   GPIO_InitStruct.Pin = GPIO_PIN_0;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PC8 PC9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PA9 PA10 */
+  GPIO_InitStruct.Pin = GPIO_PIN_9|GPIO_PIN_10;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
@@ -656,7 +906,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     if (htim->Instance == TIM2)
     {
         // 100 Hz tick work (already required)
-        HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_0);
+        // HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_0);
 
         // Divide to 10 Hz using a small counter
         static uint8_t subcnt = 0;   // lives only in ISR
