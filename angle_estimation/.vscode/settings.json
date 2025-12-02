@@ -14,6 +14,7 @@
     ],
     "files.associations": {
         "string.h": "c",
-        "usb_device.h": "c"
+        "usb_device.h": "c",
+        "math.h": "c"
     }
 }
